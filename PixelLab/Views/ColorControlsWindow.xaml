@@ -1,0 +1,76 @@
+﻿<Window x:Class="PixelLab_Desktop.Views.ColorControlsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Color Controls (All Spaces)" Height="500" Width="400"
+        WindowStartupLocation="CenterOwner">
+    <TabControl Margin="5">
+        <!-- RGB -->
+        <TabItem Header="RGB">
+            <StackPanel Margin="10">
+                <CheckBox Content="Enable Red" IsChecked="{Binding RedEnabled}"/>
+                <Slider Minimum="0" Maximum="255" Value="{Binding RedValue}" IsEnabled="{Binding RedEnabled}"/>
+                <CheckBox Content="Enable Green" IsChecked="{Binding GreenEnabled}" Margin="0,10,0,0"/>
+                <Slider Minimum="0" Maximum="255" Value="{Binding GreenValue}" IsEnabled="{Binding GreenEnabled}"/>
+                <CheckBox Content="Enable Blue" IsChecked="{Binding BlueEnabled}" Margin="0,10,0,0"/>
+                <Slider Minimum="0" Maximum="255" Value="{Binding BlueValue}" IsEnabled="{Binding BlueEnabled}"/>
+            </StackPanel>
+        </TabItem>
+        <!-- CMYK -->
+        <TabItem Header="CMYK">
+            <StackPanel Margin="10">
+                <CheckBox Content="Enable Cyan" IsChecked="{Binding CyanEnabled}"/>
+                <Slider Minimum="0" Maximum="255" Value="{Binding CyanValue}" IsEnabled="{Binding CyanEnabled}"/>
+                <CheckBox Content="Enable Magenta" IsChecked="{Binding MagentaEnabled}" Margin="0,10,0,0"/>
+                <Slider Minimum="0" Maximum="255" Value="{Binding MagentaValue}" IsEnabled="{Binding MagentaEnabled}"/>
+                <CheckBox Content="Enable Yellow" IsChecked="{Binding YellowEnabled}" Margin="0,10,0,0"/>
+                <Slider Minimum="0" Maximum="255" Value="{Binding YellowValue}" IsEnabled="{Binding YellowEnabled}"/>
+                <CheckBox Content="Enable Black" IsChecked="{Binding BlackEnabled}" Margin="0,10,0,0"/>
+                <Slider Minimum="0" Maximum="255" Value="{Binding BlackValue}" IsEnabled="{Binding BlackEnabled}"/>
+            </StackPanel>
+        </TabItem>
+        <!-- HSV -->
+        <TabItem Header="HSV">
+            <StackPanel Margin="10">
+                <CheckBox Content="Enable Hue" IsChecked="{Binding HueEnabled}"/>
+                <Slider Minimum="0" Maximum="255" Value="{Binding HueValue}" IsEnabled="{Binding HueEnabled}"/>
+                <CheckBox Content="Enable Saturation" IsChecked="{Binding SaturationEnabled}" Margin="0,10,0,0"/>
+                <Slider Minimum="0" Maximum="255" Value="{Binding SaturationValue}" IsEnabled="{Binding SaturationEnabled}"/>
+                <CheckBox Content="Enable Value" IsChecked="{Binding ValueEnabled}" Margin="0,10,0,0"/>
+                <Slider Minimum="0" Maximum="255" Value="{Binding ValueValue}" IsEnabled="{Binding ValueEnabled}"/>
+            </StackPanel>
+        </TabItem>
+        <!-- YUV -->
+        <TabItem Header="YUV">
+            <StackPanel Margin="10">
+                <CheckBox Content="Enable Y" IsChecked="{Binding YEnabled}"/>
+                <Slider Minimum="0" Maximum="255" Value="{Binding YValue}" IsEnabled="{Binding YEnabled}"/>
+                <CheckBox Content="Enable U" IsChecked="{Binding UEnabled}" Margin="0,10,0,0"/>
+                <Slider Minimum="0" Maximum="255" Value="{Binding UValue}" IsEnabled="{Binding UEnabled}"/>
+                <CheckBox Content="Enable V" IsChecked="{Binding VEnabled}" Margin="0,10,0,0"/>
+                <Slider Minimum="0" Maximum="255" Value="{Binding VValue}" IsEnabled="{Binding VEnabled}"/>
+            </StackPanel>
+        </TabItem>
+        <!-- YCbCr -->
+        <TabItem Header="YCbCr">
+            <StackPanel Margin="10">
+                <CheckBox Content="Enable Y" IsChecked="{Binding YCbCrYEnabled}"/>
+                <Slider Minimum="0" Maximum="255" Value="{Binding YCbCrYValue}" IsEnabled="{Binding YCbCrYEnabled}"/>
+                <CheckBox Content="Enable Cb" IsChecked="{Binding CbEnabled}" Margin="0,10,0,0"/>
+                <Slider Minimum="0" Maximum="255" Value="{Binding CbValue}" IsEnabled="{Binding CbEnabled}"/>
+                <CheckBox Content="Enable Cr" IsChecked="{Binding CrEnabled}" Margin="0,10,0,0"/>
+                <Slider Minimum="0" Maximum="255" Value="{Binding CrValue}" IsEnabled="{Binding CrEnabled}"/>
+            </StackPanel>
+        </TabItem>
+        <!-- LAB -->
+        <TabItem Header="LAB">
+            <StackPanel Margin="10">
+                <CheckBox Content="Enable L" IsChecked="{Binding LEnabled}"/>
+                <Slider Minimum="0" Maximum="255" Value="{Binding LValue}" IsEnabled="{Binding LEnabled}"/>
+                <CheckBox Content="Enable A" IsChecked="{Binding AEnabled}" Margin="0,10,0,0"/>
+                <Slider Minimum="0" Maximum="255" Value="{Binding AValue}" IsEnabled="{Binding AEnabled}"/>
+                <CheckBox Content="Enable B" IsChecked="{Binding BEnabled}" Margin="0,10,0,0"/>
+                <Slider Minimum="0" Maximum="255" Value="{Binding BValue}" IsEnabled="{Binding BEnabled}"/>
+            </StackPanel>
+        </TabItem>
+    </TabControl>
+</Window>
