@@ -20,12 +20,19 @@ namespace PixelLab_Desktop.ViewModels
             set { _currentImage = value; OnPropertyChanged(); }
         }
 
+        // معلومات الصورة (المتطلب الثامن)
         private string _imageInfo = "No image loaded.";
         public string ImageInfo
         {
             get => _imageInfo;
             set { _imageInfo = value; OnPropertyChanged(); }
         }
+
+        // تخزين البيانات الأساسية للصورة
+        private string _originalFileName = "";
+        private string _originalFileSize = "";
+        private string _originalImageFormat = "";
+        private int _originalWidth, _originalHeight;
 
         // أوامر المتطلب الثاني
         public ICommand LoadImageCommand { get; }
@@ -37,7 +44,7 @@ namespace PixelLab_Desktop.ViewModels
         public ICommand ConvertToLabCommand { get; }
         public ICommand ResetToOriginalCommand { get; }
 
-        // --- خصائص قنوات RGB (المتطلب الثالث) ---
+        // --- قنوات RGB (المتطلب الثالث) ---
         private bool _redEnabled = true, _greenEnabled = true, _blueEnabled = true;
         public bool RedEnabled { get => _redEnabled; set { _redEnabled = value; ApplyRgbAdjustments(); OnPropertyChanged(); } }
         public bool GreenEnabled { get => _greenEnabled; set { _greenEnabled = value; ApplyRgbAdjustments(); OnPropertyChanged(); } }
@@ -48,7 +55,7 @@ namespace PixelLab_Desktop.ViewModels
         public byte GreenValue { get => _greenValue; set { _greenValue = value; ApplyRgbAdjustments(); OnPropertyChanged(); } }
         public byte BlueValue { get => _blueValue; set { _blueValue = value; ApplyRgbAdjustments(); OnPropertyChanged(); } }
 
-        // --- خصائص قنوات CMYK ---
+        // --- قنوات CMYK ---
         private bool _cyanEnabled = true, _magentaEnabled = true, _yellowEnabled = true, _blackEnabled = true;
         public bool CyanEnabled { get => _cyanEnabled; set { _cyanEnabled = value; ApplyCmykAdjustments(); OnPropertyChanged(); } }
         public bool MagentaEnabled { get => _magentaEnabled; set { _magentaEnabled = value; ApplyCmykAdjustments(); OnPropertyChanged(); } }
@@ -61,7 +68,7 @@ namespace PixelLab_Desktop.ViewModels
         public byte YellowValue { get => _yellowValue; set { _yellowValue = value; ApplyCmykAdjustments(); OnPropertyChanged(); } }
         public byte BlackValue { get => _blackValue; set { _blackValue = value; ApplyCmykAdjustments(); OnPropertyChanged(); } }
 
-        // --- خصائص قنوات HSV ---
+        // --- قنوات HSV ---
         private bool _hueEnabled = true, _saturationEnabled = true, _valueEnabled = true;
         public bool HueEnabled { get => _hueEnabled; set { _hueEnabled = value; ApplyHsvAdjustments(); OnPropertyChanged(); } }
         public bool SaturationEnabled { get => _saturationEnabled; set { _saturationEnabled = value; ApplyHsvAdjustments(); OnPropertyChanged(); } }
@@ -72,7 +79,7 @@ namespace PixelLab_Desktop.ViewModels
         public byte SaturationValue { get => _saturationValue; set { _saturationValue = value; ApplyHsvAdjustments(); OnPropertyChanged(); } }
         public byte ValueValue { get => _valueValue; set { _valueValue = value; ApplyHsvAdjustments(); OnPropertyChanged(); } }
 
-        // --- خصائص قنوات YUV ---
+        // --- قنوات YUV ---
         private bool _yEnabled = true, _uEnabled = true, _vEnabled = true;
         public bool YEnabled { get => _yEnabled; set { _yEnabled = value; ApplyYuvAdjustments(); OnPropertyChanged(); } }
         public bool UEnabled { get => _uEnabled; set { _uEnabled = value; ApplyYuvAdjustments(); OnPropertyChanged(); } }
@@ -83,7 +90,7 @@ namespace PixelLab_Desktop.ViewModels
         public byte UValue { get => _uValue; set { _uValue = value; ApplyYuvAdjustments(); OnPropertyChanged(); } }
         public byte VValue { get => _vValue; set { _vValue = value; ApplyYuvAdjustments(); OnPropertyChanged(); } }
 
-        // --- خصائص قنوات YCbCr ---
+        // --- قنوات YCbCr ---
         private bool _ycbcrYEnabled = true, _cbEnabled = true, _crEnabled = true;
         public bool YCbCrYEnabled { get => _ycbcrYEnabled; set { _ycbcrYEnabled = value; ApplyYCbCrAdjustments(); OnPropertyChanged(); } }
         public bool CbEnabled { get => _cbEnabled; set { _cbEnabled = value; ApplyYCbCrAdjustments(); OnPropertyChanged(); } }
@@ -94,7 +101,7 @@ namespace PixelLab_Desktop.ViewModels
         public byte CbValue { get => _cbValue; set { _cbValue = value; ApplyYCbCrAdjustments(); OnPropertyChanged(); } }
         public byte CrValue { get => _crValue; set { _crValue = value; ApplyYCbCrAdjustments(); OnPropertyChanged(); } }
 
-        // --- خصائص قنوات LAB ---
+        // --- قنوات LAB ---
         private bool _lEnabled = true, _aEnabled = true, _bEnabled = true;
         public bool LEnabled { get => _lEnabled; set { _lEnabled = value; ApplyLabAdjustments(); OnPropertyChanged(); } }
         public bool AEnabled { get => _aEnabled; set { _aEnabled = value; ApplyLabAdjustments(); OnPropertyChanged(); } }
@@ -118,7 +125,7 @@ namespace PixelLab_Desktop.ViewModels
             ResetToOriginalCommand = new RelayCommand(ExecuteResetToOriginal);
         }
 
-        // دالة عامة لتحميل الصورة من مسار (تستخدم للسحب والإفلات)
+        // دالة عامة للسحب والإفلات
         public void LoadImageFromPath(string path) => LoadImage(path);
 
         // فتح مربع حوار واختيار صورة
@@ -128,7 +135,7 @@ namespace PixelLab_Desktop.ViewModels
             if (dlg.ShowDialog() == true) LoadImage(dlg.FileName);
         }
 
-        // تحميل الصورة وتخزينها كـ WriteableBitmap
+        // تحميل الصورة وحفظ معلوماتها (المتطلب الثامن)
         private void LoadImage(string path)
         {
             try
@@ -142,7 +149,28 @@ namespace PixelLab_Desktop.ViewModels
                 var wb = new WriteableBitmap(bmp);
                 _originalWb = wb;
                 CurrentImage = bmp;
-                ImageInfo = $"Width: {bmp.PixelWidth} | Height: {bmp.PixelHeight}";
+                _originalWidth = bmp.PixelWidth;
+                _originalHeight = bmp.PixelHeight;
+
+                // استخراج المعلومات
+                _originalFileName = System.IO.Path.GetFileName(path);
+                FileInfo fi = new FileInfo(path);
+                long bytes = fi.Length;
+                _originalFileSize = bytes >= 1024 * 1024
+                    ? $"{bytes / (1024.0 * 1024.0):F2} MB"
+                    : $"{bytes / 1024.0:F2} KB";
+
+                string ext = System.IO.Path.GetExtension(path).ToLower();
+                _originalImageFormat = ext switch
+                {
+                    ".jpg" or ".jpeg" => "JPEG",
+                    ".png" => "PNG",
+                    ".bmp" => "BMP",
+                    ".gif" => "GIF",
+                    _ => ext.TrimStart('.')
+                };
+
+                ImageInfo = $"📄 {_originalFileName} | {_originalImageFormat} | {_originalFileSize} | 📐 {_originalWidth}x{_originalHeight}";
             }
             catch (Exception ex) { ImageInfo = $"Error: {ex.Message}"; }
         }
@@ -162,13 +190,13 @@ namespace PixelLab_Desktop.ViewModels
             }
         }
 
-        // التحويلات (المتطلب الثاني)
+        // --- دوال التحويل (المتطلب الثاني) مع إبقاء المعلومات ---
         private void ExecuteConvertToCmyk()
         {
             if (_originalWb == null) return;
             var converted = ColorSpaceConverter.ToCmyk(_originalWb);
             CurrentImage = ConvertWriteableToBitmapImage(converted);
-            ImageInfo = "Converted to CMYK";
+            ImageInfo = $"📄 {_originalFileName} | {_originalImageFormat} | {_originalFileSize} | (Converted to CMYK)";
         }
 
         private void ExecuteConvertToHsv()
@@ -176,7 +204,7 @@ namespace PixelLab_Desktop.ViewModels
             if (_originalWb == null) return;
             var converted = ColorSpaceConverter.ToHsv(_originalWb);
             CurrentImage = ConvertWriteableToBitmapImage(converted);
-            ImageInfo = "Converted to HSV";
+            ImageInfo = $"📄 {_originalFileName} | {_originalImageFormat} | {_originalFileSize} | (Converted to HSV)";
         }
 
         private void ExecuteConvertToYuv()
@@ -184,7 +212,7 @@ namespace PixelLab_Desktop.ViewModels
             if (_originalWb == null) return;
             var converted = ColorSpaceConverter.ToYuv(_originalWb);
             CurrentImage = ConvertWriteableToBitmapImage(converted);
-            ImageInfo = "Converted to YUV";
+            ImageInfo = $"📄 {_originalFileName} | {_originalImageFormat} | {_originalFileSize} | (Converted to YUV)";
         }
 
         private void ExecuteConvertToYCbCr()
@@ -192,7 +220,7 @@ namespace PixelLab_Desktop.ViewModels
             if (_originalWb == null) return;
             var converted = ColorSpaceConverter.ToYCbCr(_originalWb);
             CurrentImage = ConvertWriteableToBitmapImage(converted);
-            ImageInfo = "Converted to YCbCr";
+            ImageInfo = $"📄 {_originalFileName} | {_originalImageFormat} | {_originalFileSize} | (Converted to YCbCr)";
         }
 
         private void ExecuteConvertToLab()
@@ -200,17 +228,17 @@ namespace PixelLab_Desktop.ViewModels
             if (_originalWb == null) return;
             var converted = ColorSpaceConverter.ToLab(_originalWb);
             CurrentImage = ConvertWriteableToBitmapImage(converted);
-            ImageInfo = "Converted to LAB";
+            ImageInfo = $"📄 {_originalFileName} | {_originalImageFormat} | {_originalFileSize} | (Converted to LAB)";
         }
 
         private void ExecuteResetToOriginal()
         {
             if (_originalWb == null) return;
             CurrentImage = ConvertWriteableToBitmapImage(_originalWb);
-            ImageInfo = "Restored original image";
+            ImageInfo = $"📄 {_originalFileName} | {_originalImageFormat} | {_originalFileSize} | 📐 {_originalWidth}x{_originalHeight}";
         }
 
-        // --- دوال التعديل الفوري للمتطلب الثالث (RGB) ---
+        // --- دوال التعديل الفوري (المتطلب الثالث) ---
         private void ApplyRgbAdjustments()
         {
             if (_originalWb == null) return;
@@ -233,7 +261,6 @@ namespace PixelLab_Desktop.ViewModels
             UpdateDisplay(w, h, stride, pixels);
         }
 
-        // CMYK
         private void ApplyCmykAdjustments()
         {
             if (_originalWb == null) return;
@@ -262,7 +289,6 @@ namespace PixelLab_Desktop.ViewModels
             UpdateDisplay(w, h, stride, pixels);
         }
 
-        // HSV
         private void ApplyHsvAdjustments()
         {
             if (_originalWb == null) return;
@@ -317,7 +343,6 @@ namespace PixelLab_Desktop.ViewModels
             UpdateDisplay(w, h, stride, pixels);
         }
 
-        // YUV
         private void ApplyYuvAdjustments()
         {
             if (_originalWb == null) return;
@@ -348,7 +373,6 @@ namespace PixelLab_Desktop.ViewModels
             UpdateDisplay(w, h, stride, pixels);
         }
 
-        // YCbCr
         private void ApplyYCbCrAdjustments()
         {
             if (_originalWb == null) return;
@@ -379,7 +403,6 @@ namespace PixelLab_Desktop.ViewModels
             UpdateDisplay(w, h, stride, pixels);
         }
 
-        // LAB
         private void ApplyLabAdjustments()
         {
             if (_originalWb == null) return;
@@ -431,7 +454,7 @@ namespace PixelLab_Desktop.ViewModels
             UpdateDisplay(w, h, stride, pixels);
         }
 
-        // تحديث الصورة المعروضة
+        // تحديث الصورة المعروضة بعد تعديل القنوات
         private void UpdateDisplay(int w, int h, int stride, byte[] pixels)
         {
             WriteableBitmap result = new WriteableBitmap(w, h, _originalWb.DpiX, _originalWb.DpiY, _originalWb.Format, null);
@@ -439,7 +462,7 @@ namespace PixelLab_Desktop.ViewModels
             CurrentImage = ConvertWriteableToBitmapImage(result);
         }
 
-        // تحويل WriteableBitmap إلى BitmapImage (للعرض)
+        // تحويل WriteableBitmap إلى BitmapImage (للعرض في WPF)
         private BitmapImage ConvertWriteableToBitmapImage(WriteableBitmap wb)
         {
             using var ms = new MemoryStream();
@@ -456,7 +479,7 @@ namespace PixelLab_Desktop.ViewModels
             return result;
         }
 
-        // INotifyPropertyChanged
+        // تنفيذ INotifyPropertyChanged
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string? name = null) =>
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
