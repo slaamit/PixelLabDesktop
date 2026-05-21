@@ -44,6 +44,16 @@ namespace PixelLab_Desktop.ViewModels
         public ICommand ConvertToLabCommand { get; }
         public ICommand ResetToOriginalCommand { get; }
 
+        // --- Talab 7: (Color Channels count Control) ---
+        private int _colorLevels = 256;
+        public int ColorLevels
+        {
+            get => _colorLevels;
+            set { _colorLevels = value; OnPropertyChanged(); }
+        }
+
+        public ICommand ApplyPosterizeCommand { get; }
+
         // --- قنوات RGB (المتطلب الثالث) ---
         private bool _redEnabled = true, _greenEnabled = true, _blueEnabled = true;
         public bool RedEnabled { get => _redEnabled; set { _redEnabled = value; ApplyRgbAdjustments(); OnPropertyChanged(); } }
@@ -123,6 +133,7 @@ namespace PixelLab_Desktop.ViewModels
             ConvertToYCbCrCommand = new RelayCommand(ExecuteConvertToYCbCr);
             ConvertToLabCommand = new RelayCommand(ExecuteConvertToLab);
             ResetToOriginalCommand = new RelayCommand(ExecuteResetToOriginal);
+            ApplyPosterizeCommand = new RelayCommand(ApplyPosterization);
         }
 
         // دالة عامة للسحب والإفلات
@@ -237,6 +248,40 @@ namespace PixelLab_Desktop.ViewModels
             CurrentImage = ConvertWriteableToBitmapImage(_originalWb);
             ImageInfo = $"📄 {_originalFileName} | {_originalImageFormat} | {_originalFileSize} | 📐 {_originalWidth}x{_originalHeight}";
         }
+
+        private void ApplyPosterization()
+        {
+            if (_originalWb == null) return;
+
+            int levels = Math.Clamp(_colorLevels, 2, 256);
+            int w = _originalWb.PixelWidth, h = _originalWb.PixelHeight, stride = w * 4;
+            byte[] pixels = new byte[h * stride];
+            _originalWb.CopyPixels(pixels, stride, 0);
+
+            // Build a lookup table for speed: maps each 0-255 value to its bucket center
+            byte[] lut = new byte[256];
+            for (int i = 0; i < 256; i++)
+            {
+                // Which bucket does value i fall into?
+                int bucket = (int)(i / 256.0 * levels);
+                if (bucket >= levels) bucket = levels - 1;
+                // Map bucket back to a 0-255 value (center of the bucket)
+                lut[i] = (byte)Math.Round((bucket + 0.5) / levels * 255);
+            }
+
+            for (int i = 0; i < pixels.Length - 3; i += 4)
+            {
+                pixels[i] = lut[pixels[i]];     // Blue
+                pixels[i + 1] = lut[pixels[i + 1]]; // Green
+                pixels[i + 2] = lut[pixels[i + 2]]; // Red
+                                                    // pixels[i + 3] is Alpha, leave it alone
+            }
+
+            UpdateDisplay(w, h, stride, pixels);
+            ImageInfo = $"Posterized to {levels} color levels per channel";
+        }
+
+
 
         // --- دوال التعديل الفوري (المتطلب الثالث) ---
         private void ApplyRgbAdjustments()
@@ -483,5 +528,7 @@ namespace PixelLab_Desktop.ViewModels
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string? name = null) =>
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
+        
     }
 }
