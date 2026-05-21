@@ -1,0 +1,33 @@
+<Window x:Class="PixelLab_Desktop.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:PixelLab_Desktop.ViewModels"
+        Title="PixelLab" Height="600" Width="900">
+
+    <Window.DataContext>
+        <vm:MainViewModel />
+    </Window.DataContext>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Toolbar -->
+        <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="8">
+            <Button Content="Load Image"
+                    Command="{Binding LoadImageCommand}"
+                    Margin="0,0,8,0" Padding="12,4"/>
+            <Button Content="Save Image"
+                    Command="{Binding SaveImageCommand}"
+                    Padding="12,4"/>
+        </StackPanel>
+
+        <!-- Image Display -->
+        <Image Grid.Row="1"
+               Source="{Binding DisplayedBitmap}"
+               Stretch="Uniform"
+               Margin="8"/>
+    </Grid>
+</Window>
