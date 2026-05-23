@@ -5,118 +5,35 @@
              Width="320">
 
     <UserControl.Resources>
-        <!-- Active space button style -->
         <Style x:Key="SpaceBtn" TargetType="Button">
             <Setter Property="Padding" Value="6,4"/>
-            <Setter Property="Margin" Value="2,0"/>
+            <Setter Property="Margin" Value="2,2"/>
             <Setter Property="FontSize" Value="11"/>
             <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="MinWidth" Value="44"/>
         </Style>
     </UserControl.Resources>
 
-    <Grid Background="#1E1E1E" Margin="-214,0,0,0">
+    <Grid Background="#1E1E1E">
         <Grid.RowDefinitions>
-            <!-- Space selector buttons -->
-            <RowDefinition Height="Auto"/>
-            <!-- Visualizer (top half) -->
-            <RowDefinition Height="*"/>
-            <!-- Divider -->
-            <RowDefinition Height="4"/>
-            <!-- Color info panel (bottom half) -->
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>  <!-- space buttons -->
+            <RowDefinition Height="*"/>     <!-- 3D view -->
+            <RowDefinition Height="4"/>     <!-- divider -->
+            <RowDefinition Height="Auto"/>  <!-- color info -->
         </Grid.RowDefinitions>
 
-        <!-- ── Row 0: Color space selector buttons ── -->
+        <!-- ── Row 0: Color space buttons ── -->
         <WrapPanel Grid.Row="0" Margin="6,8,6,4" HorizontalAlignment="Center">
-            <Button x:Name="BtnRgb"   Content="RGB"   Style="{StaticResource SpaceBtn}" Click="SpaceBtn_Click" Tag="RGB"/>
-            <Button x:Name="BtnHsv"   Content="HSV"   Style="{StaticResource SpaceBtn}" Click="SpaceBtn_Click" Tag="HSV"/>
-            <Button x:Name="BtnCmyk"  Content="CMYK"  Style="{StaticResource SpaceBtn}" Click="SpaceBtn_Click" Tag="CMYK"/>
-            <Button x:Name="BtnYuv"   Content="YUV"   Style="{StaticResource SpaceBtn}" Click="SpaceBtn_Click" Tag="YUV"/>
-            <Button x:Name="BtnYCbCr" Content="YCbCr" Style="{StaticResource SpaceBtn}" Click="SpaceBtn_Click" Tag="YCbCr"/>
-            <Button x:Name="BtnLab"   Content="LAB"   Style="{StaticResource SpaceBtn}" Click="SpaceBtn_Click" Tag="LAB"/>
+            <Button Content="RGB"   Style="{StaticResource SpaceBtn}" Click="SpaceBtn_Click" Tag="RGB"/>
+            <Button Content="HSV"   Style="{StaticResource SpaceBtn}" Click="SpaceBtn_Click" Tag="HSV"/>
+            <Button Content="CMYK"  Style="{StaticResource SpaceBtn}" Click="SpaceBtn_Click" Tag="CMYK"/>
+            <Button Content="YUV"   Style="{StaticResource SpaceBtn}" Click="SpaceBtn_Click" Tag="YUV"/>
+            <Button Content="YCbCr" Style="{StaticResource SpaceBtn}" Click="SpaceBtn_Click" Tag="YCbCr"/>
+            <Button Content="LAB"   Style="{StaticResource SpaceBtn}" Click="SpaceBtn_Click" Tag="LAB"/>
         </WrapPanel>
 
-        <!-- ── Row 1: Visualizer panel ── -->
-        <Grid Grid.Row="1" Margin="6,4">
-
-            <!-- WebView2 for RGB and HSV (3D Three.js) -->
-            <wv2:WebView2 x:Name="WebView3D"
-                          Visibility="Collapsed"/>
-
-            <!-- CMYK: 4 gradient bars + click -->
-            <Grid x:Name="PanelCmyk" Visibility="Collapsed">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                <Image x:Name="ImgCmyk" Grid.Row="0" Stretch="Fill"
-                       MouseDown="Plane_MouseDown" MouseMove="Plane_MouseMove"
-                       Cursor="Cross"/>
-                <TextBlock Grid.Row="1" Text="Click a bar to pick color"
-                           Foreground="#888" FontSize="10" HorizontalAlignment="Center" Margin="0,2,0,0"/>
-            </Grid>
-
-            <!-- YUV: slider + 2D plane -->
-            <Grid x:Name="PanelYuv" Visibility="Collapsed">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,4">
-                    <TextBlock x:Name="TxtYuvY" Foreground="White" FontSize="11" Width="70" VerticalAlignment="Center"/>
-                    <Slider x:Name="SliderYuvY" Minimum="0" Maximum="1" Value="0.5"
-                            Width="180" VerticalAlignment="Center"
-                            ValueChanged="YuvSlider_Changed"/>
-                </StackPanel>
-                <Image x:Name="ImgYuv" Grid.Row="1" Stretch="Fill"
-                       MouseDown="Plane_MouseDown" MouseMove="Plane_MouseMove"
-                       Cursor="Cross"/>
-                <TextBlock Grid.Row="2" Foreground="#888" FontSize="10"
-                           Text="← U →   ↕ V" HorizontalAlignment="Center" Margin="0,2,0,0"/>
-            </Grid>
-
-            <!-- YCbCr: slider + 2D plane -->
-            <Grid x:Name="PanelYCbCr" Visibility="Collapsed">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,4">
-                    <TextBlock x:Name="TxtYCbCrY" Foreground="White" FontSize="11" Width="70" VerticalAlignment="Center"/>
-                    <Slider x:Name="SliderYCbCrY" Minimum="0" Maximum="1" Value="0.5"
-                            Width="180" VerticalAlignment="Center"
-                            ValueChanged="YCbCrSlider_Changed"/>
-                </StackPanel>
-                <Image x:Name="ImgYCbCr" Grid.Row="1" Stretch="Fill"
-                       MouseDown="Plane_MouseDown" MouseMove="Plane_MouseMove"
-                       Cursor="Cross"/>
-                <TextBlock Grid.Row="2" Foreground="#888" FontSize="10"
-                           Text="← Cb →   ↕ Cr" HorizontalAlignment="Center" Margin="0,2,0,0"/>
-            </Grid>
-
-            <!-- LAB: slider + 2D plane -->
-            <Grid x:Name="PanelLab" Visibility="Collapsed">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,4">
-                    <TextBlock x:Name="TxtLabL" Foreground="White" FontSize="11" Width="70" VerticalAlignment="Center"/>
-                    <Slider x:Name="SliderLabL" Minimum="0" Maximum="1" Value="0.5"
-                            Width="180" VerticalAlignment="Center"
-                            ValueChanged="LabSlider_Changed"/>
-                </StackPanel>
-                <Image x:Name="ImgLab" Grid.Row="1" Stretch="Fill"
-                       MouseDown="Plane_MouseDown" MouseMove="Plane_MouseMove"
-                       Cursor="Cross"/>
-                <TextBlock Grid.Row="2" Foreground="#888" FontSize="10"
-                           Text="← a* →   ↕ b*" HorizontalAlignment="Center" Margin="0,2,0,0"/>
-            </Grid>
-
-        </Grid>
+        <!-- ── Row 1: 3D WebView (all spaces) ── -->
+        <wv2:WebView2 x:Name="WebView3D" Grid.Row="1" Margin="6,4"/>
 
         <!-- ── Row 2: Divider ── -->
         <Rectangle Grid.Row="2" Fill="#444"/>
@@ -124,16 +41,17 @@
         <!-- ── Row 3: Color info panel ── -->
         <StackPanel Grid.Row="3" Margin="10,8,10,10">
 
-            <!-- Picked color swatch + title -->
+            <!-- Swatch + title -->
             <DockPanel Margin="0,0,0,8">
                 <TextBlock Text="Picked Color" Foreground="#AAA" FontSize="12"
-                           FontWeight="SemiBold" VerticalAlignment="Center" DockPanel.Dock="Left"/>
+                           FontWeight="SemiBold" VerticalAlignment="Center"
+                           DockPanel.Dock="Left"/>
                 <Border x:Name="ColorSwatch" Width="36" Height="24" CornerRadius="4"
                         Background="White" BorderBrush="#555" BorderThickness="1"
                         DockPanel.Dock="Right" HorizontalAlignment="Right"/>
             </DockPanel>
 
-            <!-- Color system rows -->
+            <!-- 6-system value grid -->
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="55"/>
@@ -148,7 +66,6 @@
                     <RowDefinition Height="22"/>
                 </Grid.RowDefinitions>
 
-                <!-- Labels -->
                 <TextBlock Grid.Row="0" Grid.Column="0" Text="RGB"   Foreground="#FF6B6B" FontWeight="Bold" FontSize="11" VerticalAlignment="Center"/>
                 <TextBlock Grid.Row="1" Grid.Column="0" Text="HSV"   Foreground="#FFD93D" FontWeight="Bold" FontSize="11" VerticalAlignment="Center"/>
                 <TextBlock Grid.Row="2" Grid.Column="0" Text="CMYK"  Foreground="#6BCB77" FontWeight="Bold" FontSize="11" VerticalAlignment="Center"/>
@@ -156,7 +73,6 @@
                 <TextBlock Grid.Row="4" Grid.Column="0" Text="YCbCr" Foreground="#C77DFF" FontWeight="Bold" FontSize="11" VerticalAlignment="Center"/>
                 <TextBlock Grid.Row="5" Grid.Column="0" Text="LAB"   Foreground="#FF9F1C" FontWeight="Bold" FontSize="11" VerticalAlignment="Center"/>
 
-                <!-- Values (set from code-behind) -->
                 <TextBlock x:Name="TxtRgb"   Grid.Row="0" Grid.Column="1" Foreground="White" FontSize="11" VerticalAlignment="Center" FontFamily="Consolas"/>
                 <TextBlock x:Name="TxtHsv"   Grid.Row="1" Grid.Column="1" Foreground="White" FontSize="11" VerticalAlignment="Center" FontFamily="Consolas"/>
                 <TextBlock x:Name="TxtCmyk"  Grid.Row="2" Grid.Column="1" Foreground="White" FontSize="11" VerticalAlignment="Center" FontFamily="Consolas"/>
@@ -165,6 +81,5 @@
                 <TextBlock x:Name="TxtLab"   Grid.Row="5" Grid.Column="1" Foreground="White" FontSize="11" VerticalAlignment="Center" FontFamily="Consolas"/>
             </Grid>
         </StackPanel>
-
     </Grid>
 </UserControl>

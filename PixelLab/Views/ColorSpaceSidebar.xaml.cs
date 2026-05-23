@@ -1,51 +1,37 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using Microsoft.Web.WebView2.Core;
-using PixelLab_Desktop.Helpers;
 using PixelLab_Desktop.ViewModels;
 
 namespace PixelLab_Desktop.Views
 {
     public partial class ColorSpaceSidebar : UserControl
     {
-        private ColorSidebarViewModel _vm = new ColorSidebarViewModel();
         private bool _isInitialized = false;
-
-
-        // Which 2D image is currently shown (for click→color mapping)
-        private string _activeSpace = "RGB";
-
-        // Cached bitmaps for the 2D panels
-        private WriteableBitmap? _bmpCmyk, _bmpYuv, _bmpYCbCr, _bmpLab;
+        private ColorSidebarViewModel _vm = new ColorSidebarViewModel();
 
         public ColorSpaceSidebar()
         {
             InitializeComponent();
             _isInitialized = true;
             InitWebView();
-            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () =>
-            {
-                ShowSpace("RGB");
-            });
         }
 
-        // ── WebView2 initialization ──────────────────────────────────────
+        // ── WebView2 init ────────────────────────────────────────────────
         private async void InitWebView()
         {
             try
             {
                 await WebView3D.EnsureCoreWebView2Async(null);
                 WebView3D.CoreWebView2.WebMessageReceived += OnWebMessageReceived;
-                LoadThreeScene("RGB");
+                Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () =>
+                {
+                    ShowSpace("RGB");
+                });
             }
-            catch
-            {
-                // WebView2 runtime not installed — fall back gracefully
-            }
+            catch { /* WebView2 runtime not installed */ }
         }
 
         // ── Space selector buttons ───────────────────────────────────────
@@ -57,59 +43,13 @@ namespace PixelLab_Desktop.Views
 
         private void ShowSpace(string space)
         {
-            _activeSpace = space;
-            _vm.ActiveSpace = space;
-
-            // Hide all panels
-            WebView3D.Visibility  = Visibility.Collapsed;
-            PanelCmyk.Visibility  = Visibility.Collapsed;
-            PanelYuv.Visibility   = Visibility.Collapsed;
-            PanelYCbCr.Visibility = Visibility.Collapsed;
-            PanelLab.Visibility   = Visibility.Collapsed;
-
-            switch (space)
-            {
-                case "RGB":
-                case "HSV":
-                    WebView3D.Visibility = Visibility.Visible;
-                    LoadThreeScene(space);
-                    break;
-
-                case "CMYK":
-                    PanelCmyk.Visibility = Visibility.Visible;
-                    RedrawCmyk();
-                    break;
-
-                case "YUV":
-                    PanelYuv.Visibility = Visibility.Visible;
-                    RedrawYuv();
-                    break;
-
-                case "YCbCr":
-                    PanelYCbCr.Visibility = Visibility.Visible;
-                    RedrawYCbCr();
-                    break;
-
-                case "LAB":
-                    PanelLab.Visibility = Visibility.Visible;
-                    RedrawLab();
-                    break;
-            }
-        }
-
-        // ── Three.js scene loader ────────────────────────────────────────
-        private void LoadThreeScene(string space)
-        {
             if (WebView3D.CoreWebView2 == null) return;
-
-            string html = space == "RGB" ? BuildRgbCubeHtml() : BuildHsvCylinderHtml();
-            WebView3D.NavigateToString(html);
+            WebView3D.NavigateToString(BuildHtml(space));
         }
 
-        // ── Receive color picks from the Three.js scene ──────────────────
+        // ── Receive picked color from Three.js ───────────────────────────
         private void OnWebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
         {
-            // Message format: "r,g,b"  e.g. "255,128,0"
             var parts = e.TryGetWebMessageAsString().Split(',');
             if (parts.Length == 3 &&
                 byte.TryParse(parts[0], out byte r) &&
@@ -120,279 +60,375 @@ namespace PixelLab_Desktop.Views
             }
         }
 
-        private void UserControl_Loaded(object sender, RoutedEventArgs e)
-        {
-            ShowSpace(_activeSpace);
-        }
-
-        // ── 2D bitmap redraws ────────────────────────────────────────────
-        private void RedrawCmyk()
-        {
-            if (!_isInitialized) return;
-            int w = ImgCmyk.ActualWidth > 0 ? (int)ImgCmyk.ActualWidth : 280;
-            int h = ImgCmyk.ActualHeight > 0 ? (int)ImgCmyk.ActualHeight : 200;
-            _bmpCmyk = ColorSpaceVisualizer.DrawCmykBars(w, h);
-            ImgCmyk.Source = _bmpCmyk;
-        }
-
-        private void RedrawYuv()
-        {
-            if (!_isInitialized) return;
-            int w = ImgYuv.ActualWidth > 0 ? (int)ImgYuv.ActualWidth : 280;
-            int h = ImgYuv.ActualHeight > 0 ? (int)ImgYuv.ActualHeight : 180;
-            _bmpYuv = ColorSpaceVisualizer.DrawYuvPlane(w, h, (float)SliderYuvY.Value);
-            ImgYuv.Source = _bmpYuv;
-            TxtYuvY.Text = $"Y = {(int)(SliderYuvY.Value * 100)}%";
-        }
-
-        private void RedrawYCbCr()
-        {
-            if (!_isInitialized) return;
-            int w = ImgYCbCr.ActualWidth > 0 ? (int)ImgYCbCr.ActualWidth : 280;
-            int h = ImgYCbCr.ActualHeight > 0 ? (int)ImgYCbCr.ActualHeight : 180;
-            _bmpYCbCr = ColorSpaceVisualizer.DrawYCbCrPlane(w, h, (float)SliderYCbCrY.Value);
-            ImgYCbCr.Source = _bmpYCbCr;
-            TxtYCbCrY.Text = $"Y = {(int)(SliderYCbCrY.Value * 100)}%";
-        }
-
-        private void RedrawLab()
-        {
-            if (!_isInitialized) return;
-            int w = ImgLab.ActualWidth > 0 ? (int)ImgLab.ActualWidth : 280;
-            int h = ImgLab.ActualHeight > 0 ? (int)ImgLab.ActualHeight : 180;
-            _bmpLab = ColorSpaceVisualizer.DrawLabPlane(w, h, (float)SliderLabL.Value);
-            ImgLab.Source = _bmpLab;
-            TxtLabL.Text = $"L = {(int)(SliderLabL.Value * 100)}";
-        }
-
-        // ── Slider change handlers ───────────────────────────────────────
-        private void YuvSlider_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)   => RedrawYuv();
-        private void YCbCrSlider_Changed(object sender, RoutedPropertyChangedEventArgs<double> e) => RedrawYCbCr();
-        private void LabSlider_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)   => RedrawLab();
-
-        // ── 2D plane mouse click / drag ──────────────────────────────────
-        private void Plane_MouseDown(object sender, MouseButtonEventArgs e) => PickFromPlane(sender, e.GetPosition((Image)sender));
-        private void Plane_MouseMove(object sender, MouseEventArgs e)
-        {
-            if (e.LeftButton == MouseButtonState.Pressed)
-                PickFromPlane(sender, e.GetPosition((Image)sender));
-        }
-
-        private void PickFromPlane(object sender, Point pos)
-        {
-            Image img = (Image)sender;
-            WriteableBitmap? bmp = _activeSpace switch
-            {
-                "CMYK"  => _bmpCmyk,
-                "YUV"   => _bmpYuv,
-                "YCbCr" => _bmpYCbCr,
-                "LAB"   => _bmpLab,
-                _       => null
-            };
-            if (bmp == null) return;
-
-            // Map Image control coords → bitmap pixel coords
-            int px = (int)(pos.X / img.ActualWidth  * bmp.PixelWidth);
-            int py = (int)(pos.Y / img.ActualHeight * bmp.PixelHeight);
-            px = Math.Clamp(px, 0, bmp.PixelWidth  - 1);
-            py = Math.Clamp(py, 0, bmp.PixelHeight - 1);
-
-            // Read pixel (BGRA format)
-            byte[] pixel = new byte[4];
-            bmp.CopyPixels(new Int32Rect(px, py, 1, 1), pixel, 4, 0);
-            SetPickedColor(pixel[2], pixel[1], pixel[0]);
-        }
-
-        // ── Update color info panel ──────────────────────────────────────
         private void SetPickedColor(byte r, byte g, byte b)
         {
             _vm.PickedColor = Color.FromRgb(r, g, b);
-
-            // Update swatch
             ColorSwatch.Background = new SolidColorBrush(Color.FromRgb(r, g, b));
-
-            // Update all text rows
-            TxtRgb.Text   = _vm.RgbText;
-            TxtHsv.Text   = _vm.HsvText;
-            TxtCmyk.Text  = _vm.CmykText;
-            TxtYuv.Text   = _vm.YuvText;
+            TxtRgb.Text = _vm.RgbText;
+            TxtHsv.Text = _vm.HsvText;
+            TxtCmyk.Text = _vm.CmykText;
+            TxtYuv.Text = _vm.YuvText;
             TxtYCbCr.Text = _vm.YCbCrText;
-            TxtLab.Text   = _vm.LabText;
+            TxtLab.Text = _vm.LabText;
         }
 
         // ════════════════════════════════════════════════════════════════
-        // Three.js HTML builders
+        // HTML router
+        // ════════════════════════════════════════════════════════════════
+        private static string BuildHtml(string space) => space switch
+        {
+            "RGB" => BuildRgbCubeHtml(),
+            "HSV" => BuildHsvConeHtml(),
+            "CMYK" => BuildCmyCubeHtml(),
+            "YUV" => BuildYuvCylinderHtml(),
+            "YCbCr" => BuildYCbCrConeHtml(),
+            "LAB" => BuildLabSphereHtml(),
+            _ => "<html><body style='color:white'>Unknown</body></html>"
+        };
+
+        // ════════════════════════════════════════════════════════════════
+        // Shared JS snippets
         // ════════════════════════════════════════════════════════════════
 
-        private static string BuildRgbCubeHtml() => @"
-<!DOCTYPE html><html><body style='margin:0;background:#1a1a1a;overflow:hidden'>
-<canvas id='c' style='display:block'></canvas>
+        // Pixel-color picking — reads the rendered pixel from the WebGL
+        // canvas, so it is always correct after any rotation or zoom.
+        private static string PickingScript => @"
+renderer.domElement.addEventListener('click', function(e) {
+    renderer.render(scene, camera);
+    const rect = renderer.domElement.getBoundingClientRect();
+    const x = Math.floor((e.clientX - rect.left) * window.devicePixelRatio);
+    const y = Math.floor((renderer.domElement.height) - (e.clientY - rect.top) * window.devicePixelRatio);
+    const buf = new Uint8Array(4);
+    renderer.getContext().readPixels(x, y, 1, 1, 0x1908, 0x1401, buf);
+    if (buf[3] > 10) {
+        window.chrome.webview.postMessage(buf[0]+','+buf[1]+','+buf[2]);
+    }
+});
+";
+
+        // Full-axis mouse rotate (X and Y) + scroll zoom
+        private static string ControlsScript => @"
+let _drag = false, _lx = 0, _ly = 0;
+document.addEventListener('mousedown', e => { if(e.button===0){_drag=true;_lx=e.clientX;_ly=e.clientY;} });
+document.addEventListener('mouseup',   () => _drag = false);
+document.addEventListener('mousemove', e => {
+    if (!_drag) return;
+    group.rotation.y += (e.clientX - _lx) * 0.01;
+    group.rotation.x += (e.clientY - _ly) * 0.01;
+    _lx = e.clientX; _ly = e.clientY;
+});
+document.addEventListener('wheel', e => {
+    camera.position.multiplyScalar(e.deltaY > 0 ? 1.1 : 0.9);
+    e.preventDefault();
+}, {passive:false});
+function animate() { requestAnimationFrame(animate); renderer.render(scene, camera); }
+animate();
+";
+
+        private static string MakeRenderer(string bg = "0x1a1a1a") => $@"
+const renderer = new THREE.WebGLRenderer({{
+    canvas: document.getElementById('c'),
+    antialias: true,
+    preserveDrawingBuffer: true
+}});
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color({bg});
+const group = new THREE.Group();
+scene.add(group);
+";
+
+        // ════════════════════════════════════════════════════════════════
+        // 1. RGB CUBE
+        // ════════════════════════════════════════════════════════════════
+        private static string BuildRgbCubeHtml() => $@"
+<!DOCTYPE html><html><body style='margin:0;overflow:hidden'>
+<canvas id='c'></canvas>
 <script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'></script>
 <script>
-const W = window.innerWidth, H = window.innerHeight;
-const renderer = new THREE.WebGLRenderer({canvas:document.getElementById('c'),antialias:true});
-renderer.setSize(W,H);
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x1a1a1a);
-const camera = new THREE.PerspectiveCamera(45, W/H, 0.1, 100);
-camera.position.set(2,2,2);
-camera.lookAt(0,0,0);
+{MakeRenderer()}
+const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 100);
+camera.position.set(1.8, 1.4, 1.8); camera.lookAt(0,0,0);
 
-// RGB Cube: each vertex colored by its RGB position
-const geo = new THREE.BoxGeometry(1,1,1);
-const colors = [];
-const pos = geo.attributes.position;
-for(let i=0;i<pos.count;i++){
-  const x=pos.getX(i)+0.5, y=pos.getY(i)+0.5, z=pos.getZ(i)+0.5;
-  colors.push(x,y,z);
-}
-geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
-const mat = new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide});
-const cube = new THREE.Mesh(geo,mat);
-scene.add(cube);
-
-// Edges
-const edges = new THREE.EdgesGeometry(new THREE.BoxGeometry(1,1,1));
-scene.add(new THREE.LineSegments(edges, new THREE.LineBasicMaterial({color:0xffffff,opacity:0.3,transparent:true})));
-
-// Axis labels hint
-const axisColors = [{c:0xff0000,v:new THREE.Vector3(0.7,0,0)},{c:0x00ff00,v:new THREE.Vector3(0,0.7,0)},{c:0x0000ff,v:new THREE.Vector3(0,0,0.7)}];
-axisColors.forEach(a=>{const g=new THREE.SphereGeometry(0.025);scene.add(new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:a.c})));});
-
-// Mouse rotate
-let isDragging=false,lastX=0,lastY=0;
-document.addEventListener('mousedown',e=>{isDragging=true;lastX=e.clientX;lastY=e.clientY;});
-document.addEventListener('mouseup',  ()=>{isDragging=false;});
-document.addEventListener('mousemove',e=>{
-  if(!isDragging)return;
-  cube.rotation.y+=(e.clientX-lastX)*0.01;
-  cube.rotation.x+=(e.clientY-lastY)*0.01;
-  lastX=e.clientX;lastY=e.clientY;
-});
-// Zoom
-document.addEventListener('wheel',e=>{camera.position.multiplyScalar(e.deltaY>0?1.1:0.9);});
-
-// Click to pick color
-document.addEventListener('click',e=>{
-  const rect=renderer.domElement.getBoundingClientRect();
-  const mouse=new THREE.Vector2(
-    ((e.clientX-rect.left)/rect.width)*2-1,
-   -((e.clientY-rect.top)/rect.height)*2+1
-  );
-  const ray=new THREE.Raycaster();
-  ray.setFromCamera(mouse,camera);
-  const hits=ray.intersectObject(cube);
-  if(hits.length>0){
-    const p=hits[0].point;
-    const r=Math.round(Math.clamp01(p.x+0.5)*255);
-    const g=Math.round(Math.clamp01(p.y+0.5)*255);
-    const b=Math.round(Math.clamp01(p.z+0.5)*255);
-    window.chrome.webview.postMessage(r+','+g+','+b);
-  }
-});
-THREE.MathUtils.clamp01=(v)=>Math.max(0,Math.min(1,v));
-Math.clamp01=(v)=>Math.max(0,Math.min(1,v));
-
-function animate(){requestAnimationFrame(animate);renderer.render(scene,camera);}
-animate();
+// Subdivided box so interior faces show gradients properly
+const geo = new THREE.BoxGeometry(1,1,1,10,10,10);
+const cols = []; const pos = geo.attributes.position;
+for (let i=0;i<pos.count;i++) {{
+    cols.push(
+        Math.max(0,Math.min(1, pos.getX(i)+0.5)),
+        Math.max(0,Math.min(1, pos.getY(i)+0.5)),
+        Math.max(0,Math.min(1, pos.getZ(i)+0.5))
+    );
+}}
+geo.setAttribute('color', new THREE.Float32BufferAttribute(cols,3));
+group.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({{vertexColors:true,side:THREE.DoubleSide}})));
+group.add(new THREE.LineSegments(
+    new THREE.EdgesGeometry(new THREE.BoxGeometry(1,1,1)),
+    new THREE.LineBasicMaterial({{color:0xffffff,opacity:0.3,transparent:true}})
+));
+{PickingScript}
+{ControlsScript}
 </script></body></html>";
 
-        private static string BuildHsvCylinderHtml() => @"
-<!DOCTYPE html><html><body style='margin:0;background:#1a1a1a;overflow:hidden'>
-<canvas id='c' style='display:block'></canvas>
+        // ════════════════════════════════════════════════════════════════
+        // 2. HSV CONE  (point = black at bottom, wide top = full sat)
+        // ════════════════════════════════════════════════════════════════
+        private static string BuildHsvConeHtml() => $@"
+<!DOCTYPE html><html><body style='margin:0;overflow:hidden'>
+<canvas id='c'></canvas>
 <script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'></script>
 <script>
-const W=window.innerWidth,H=window.innerHeight;
-const renderer=new THREE.WebGLRenderer({canvas:document.getElementById('c'),antialias:true});
-renderer.setSize(W,H);
-const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x1a1a1a);
-const camera=new THREE.PerspectiveCamera(45,W/H,0.1,100);
-camera.position.set(0,2.5,3);
-camera.lookAt(0,0,0);
+{MakeRenderer()}
+const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 100);
+camera.position.set(0, 1.8, 3.5); camera.lookAt(0,0,0);
 
-function hsvToRgb(h,s,v){
-  const i=Math.floor(h*6),f=h*6-i,p=v*(1-s),q=v*(1-f*s),t=v*(1-(1-f)*s);
-  switch(i%6){
-    case 0:return[v,t,p];case 1:return[q,v,p];case 2:return[p,v,t];
-    case 3:return[p,q,v];case 4:return[t,p,v];case 5:return[v,p,q];
-  }
-  return[0,0,0];
-}
+function hsvToRgb(h,s,v) {{
+    const i=Math.floor(h*6),f=h*6-i,p=v*(1-s),q=v*(1-f*s),t=v*(1-(1-f)*s);
+    switch(i%6){{case 0:return[v,t,p];case 1:return[q,v,p];case 2:return[p,v,t];
+                case 3:return[p,q,v];case 4:return[t,p,v];case 5:return[v,p,q];}}
+    return[0,0,0];
+}}
 
-// Build cylinder geometry with HSV colors
-const segments=64, stacks=20, radius=1, height=2;
-const geo=new THREE.CylinderGeometry(radius,radius,height,segments,stacks,true);
-const colors=[];
-const pos=geo.attributes.position;
-for(let i=0;i<pos.count;i++){
-  const x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i);
-  const h=(Math.atan2(z,x)/(2*Math.PI)+1)%1;
-  const s=Math.sqrt(x*x+z*z)/radius;
-  const v=(y/height)+0.5;
-  const [r,g,b]=hsvToRgb(h,s,v);
-  colors.push(r,g,b);
-}
-geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
-const mat=new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide});
-const cyl=new THREE.Mesh(geo,mat);
-scene.add(cyl);
+// Cone: radiusTop=0 (tip=black), radiusBottom=1 (base=full saturation)
+// We flip it so tip is at bottom (y=-1) and base at top (y=+1)
+const geo = new THREE.ConeGeometry(1, 2, 128, 32, true);
+geo.rotateZ(Math.PI); // flip: tip now at bottom
+const cols=[], pos=geo.attributes.position;
+for(let i=0;i<pos.count;i++) {{
+    const x=pos.getX(i), y=pos.getY(i), z=pos.getZ(i);
+    const h = ((Math.atan2(z,x)/(2*Math.PI))+1)%1;
+    // v: 0 at tip (y=+1 after flip becomes y=-1... recompute from geometry)
+    // After rotateZ(PI): original tip (y=+1) → y=-1, base(y=-1)→y=+1
+    const vNorm = Math.max(0, Math.min(1, (y+1)/2)); // 0=tip(black), 1=base(bright)
+    const coneR = vNorm; // radius of cone at this height
+    const dist = Math.sqrt(x*x+z*z);
+    const s = coneR > 0.001 ? Math.min(1, dist/coneR) : 0;
+    const [r,g,b] = hsvToRgb(h, s, vNorm);
+    cols.push(r,g,b);
+}}
+geo.setAttribute('color', new THREE.Float32BufferAttribute(cols,3));
+group.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({{vertexColors:true,side:THREE.DoubleSide}})));
 
-// Top/bottom discs
-[0.5,-0.5].forEach(yPos=>{
-  const discGeo=new THREE.CircleGeometry(radius,segments);
-  const discColors=[];
-  const dpos=discGeo.attributes.position;
-  for(let i=0;i<dpos.count;i++){
-    const x=dpos.getX(i),z=dpos.getZ(i);
-    const h=(Math.atan2(z,x)/(2*Math.PI)+1)%1;
-    const s=Math.sqrt(x*x+z*z)/radius;
-    const v=yPos>0?1:0;
-    const [r,g,b]=hsvToRgb(h,Math.min(1,s),v);
-    discColors.push(r,g,b);
-  }
-  discGeo.setAttribute('color',new THREE.Float32BufferAttribute(discColors,3));
-  const disc=new THREE.Mesh(discGeo,new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide}));
-  disc.position.y=yPos*height;
-  disc.rotation.x=yPos>0?0:Math.PI;
-  scene.add(disc);
-});
+// Top disc (base of cone, V=1)
+const dGeo = new THREE.CircleGeometry(1,128);
+const dCols=[], dp=dGeo.attributes.position;
+for(let i=0;i<dp.count;i++) {{
+    const x=dp.getX(i), z=dp.getZ(i);
+    const h=((Math.atan2(z,x)/(2*Math.PI))+1)%1;
+    const s=Math.min(1,Math.sqrt(x*x+z*z));
+    const [r,g,b]=hsvToRgb(h,s,1);
+    dCols.push(r,g,b);
+}}
+dGeo.setAttribute('color', new THREE.Float32BufferAttribute(dCols,3));
+const disc = new THREE.Mesh(dGeo, new THREE.MeshBasicMaterial({{vertexColors:true,side:THREE.DoubleSide}}));
+disc.position.y = 1; disc.rotation.x = -Math.PI/2;
+group.add(disc);
 
-// Mouse rotate
-let isDragging=false,lastX=0,lastY=0;
-document.addEventListener('mousedown',e=>{isDragging=true;lastX=e.clientX;lastY=e.clientY;});
-document.addEventListener('mouseup',()=>{isDragging=false;});
-document.addEventListener('mousemove',e=>{
-  if(!isDragging)return;
-  cyl.rotation.y+=(e.clientX-lastX)*0.01;
-  lastX=e.clientX;lastY=e.clientY;
-});
-document.addEventListener('wheel',e=>{camera.position.multiplyScalar(e.deltaY>0?1.1:0.9);});
+{PickingScript}
+{ControlsScript}
+</script></body></html>";
 
-// Click to pick
-const raycaster=new THREE.Raycaster();
-document.addEventListener('click',e=>{
-  const rect=renderer.domElement.getBoundingClientRect();
-  const mouse=new THREE.Vector2(
-    ((e.clientX-rect.left)/rect.width)*2-1,
-   -((e.clientY-rect.top)/rect.height)*2+1
-  );
-  raycaster.setFromCamera(mouse,camera);
-  const hits=raycaster.intersectObject(cyl);
-  if(hits.length>0){
-    const p=hits[0].point;
-    const h=((Math.atan2(p.z,p.x)/(2*Math.PI))+1)%1;
-    const s=Math.min(1,Math.sqrt(p.x*p.x+p.z*p.z)/radius);
-    const v=Math.max(0,Math.min(1,(p.y/height)+0.5));
-    const [r,g,b]=hsvToRgb(h,s,v);
-    window.chrome.webview.postMessage(
-      Math.round(r*255)+','+Math.round(g*255)+','+Math.round(b*255)
-    );
-  }
-});
+        // ════════════════════════════════════════════════════════════════
+        // 3. CMY CUBE  (axes: C=+X, M=+Y, Y=+Z; corners match image 3)
+        // ════════════════════════════════════════════════════════════════
+        private static string BuildCmyCubeHtml() => $@"
+<!DOCTYPE html><html><body style='margin:0;overflow:hidden'>
+<canvas id='c'></canvas>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'></script>
+<script>
+{MakeRenderer()}
+const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 100);
+// Match reference: Magenta top-left, Cyan right, Yellow bottom-left
+camera.position.set(-1.6, 1.6, 2.2); camera.lookAt(0,0,0);
 
-function animate(){requestAnimationFrame(animate);renderer.render(scene,camera);}
-animate();
+const geo = new THREE.BoxGeometry(1,1,1,10,10,10);
+const cols=[], pos=geo.attributes.position;
+for(let i=0;i<pos.count;i++) {{
+    const C=Math.max(0,Math.min(1,pos.getX(i)+0.5));
+    const M=Math.max(0,Math.min(1,pos.getY(i)+0.5));
+    const Y=Math.max(0,Math.min(1,pos.getZ(i)+0.5));
+    cols.push(1-C, 1-M, 1-Y); // RGB = (1-C, 1-M, 1-Y)
+}}
+geo.setAttribute('color', new THREE.Float32BufferAttribute(cols,3));
+group.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({{vertexColors:true,side:THREE.DoubleSide}})));
+group.add(new THREE.LineSegments(
+    new THREE.EdgesGeometry(new THREE.BoxGeometry(1,1,1)),
+    new THREE.LineBasicMaterial({{color:0xffffff,opacity:0.3,transparent:true}})
+));
+{PickingScript}
+{ControlsScript}
+</script></body></html>";
+
+        // ════════════════════════════════════════════════════════════════
+        // 4. YUV CYLINDER  (Y = vertical axis, U/V = chrominance plane)
+        // ════════════════════════════════════════════════════════════════
+        private static string BuildYuvCylinderHtml() => $@"
+<!DOCTYPE html><html><body style='margin:0;overflow:hidden'>
+<canvas id='c'></canvas>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'></script>
+<script>
+{MakeRenderer()}
+const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 100);
+camera.position.set(0, 2, 4); camera.lookAt(0,0,0);
+
+function yuvToRgb(Y,U,V) {{
+    const r = Y + 1.13983*V;
+    const g = Y - 0.39465*U - 0.58060*V;
+    const b = Y + 2.03211*U;
+    return [Math.max(0,Math.min(255,r))/255,
+            Math.max(0,Math.min(255,g))/255,
+            Math.max(0,Math.min(255,b))/255];
+}}
+
+// Cylinder body: Y axis = vertical, U/V = angular + radial
+const geo = new THREE.CylinderGeometry(1,1,2,128,32,true);
+const cols=[], pos=geo.attributes.position;
+for(let i=0;i<pos.count;i++) {{
+    const x=pos.getX(i), y=pos.getY(i), z=pos.getZ(i);
+    const Yv = Math.max(0, Math.min(255, (y/2+0.5)*255));
+    const angle = Math.atan2(z,x);
+    const dist = Math.min(1, Math.sqrt(x*x+z*z));
+    const U = dist * 0.436 * Math.cos(angle) * 255;  // U range ≈ ±111
+    const V = dist * 0.615 * Math.sin(angle) * 255;  // V range ≈ ±157
+    const [r,g,b] = yuvToRgb(Yv, U, V);
+    cols.push(r,g,b);
+}}
+geo.setAttribute('color', new THREE.Float32BufferAttribute(cols,3));
+group.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({{vertexColors:true,side:THREE.DoubleSide}})));
+
+// Top disc (Y=255) and Bottom disc (Y=0)
+[1,-1].forEach(sign => {{
+    const dGeo = new THREE.CircleGeometry(1,128);
+    const dCols=[], dp=dGeo.attributes.position;
+    const Yv = sign > 0 ? 255 : 0;
+    for(let i=0;i<dp.count;i++) {{
+        const x=dp.getX(i), z=dp.getZ(i);
+        const angle=Math.atan2(z,x);
+        const dist=Math.min(1,Math.sqrt(x*x+z*z));
+        const U=dist*0.436*Math.cos(angle)*255;
+        const V=dist*0.615*Math.sin(angle)*255;
+        const [r,g,b]=yuvToRgb(Yv,U,V);
+        dCols.push(r,g,b);
+    }}
+    dGeo.setAttribute('color',new THREE.Float32BufferAttribute(dCols,3));
+    const d=new THREE.Mesh(dGeo,new THREE.MeshBasicMaterial({{vertexColors:true,side:THREE.DoubleSide}}));
+    d.position.y=sign; d.rotation.x = sign>0 ? -Math.PI/2 : Math.PI/2;
+    group.add(d);
+}});
+{PickingScript}
+{ControlsScript}
+</script></body></html>";
+
+        // ════════════════════════════════════════════════════════════════
+        // 5. YCbCr CONE  (matches image 1 — same shape as HSV cone)
+        // ════════════════════════════════════════════════════════════════
+        private static string BuildYCbCrConeHtml() => $@"
+<!DOCTYPE html><html><body style='margin:0;overflow:hidden'>
+<canvas id='c'></canvas>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'></script>
+<script>
+{MakeRenderer()}
+const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 100);
+camera.position.set(0, 1.8, 3.5); camera.lookAt(0,0,0);
+
+function ycbcrToRgb(Y,Cb,Cr) {{
+    const r=Y+1.402*(Cr-128);
+    const g=Y-0.344136*(Cb-128)-0.714136*(Cr-128);
+    const b=Y+1.772*(Cb-128);
+    return [Math.max(0,Math.min(255,r))/255,
+            Math.max(0,Math.min(255,g))/255,
+            Math.max(0,Math.min(255,b))/255];
+}}
+
+const geo = new THREE.ConeGeometry(1,2,128,32,true);
+geo.rotateZ(Math.PI); // tip at bottom
+const cols=[], pos=geo.attributes.position;
+for(let i=0;i<pos.count;i++) {{
+    const x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i);
+    const vNorm=Math.max(0,Math.min(1,(y+1)/2));
+    const Y=vNorm*235;  // luma 0→235
+    const coneR=vNorm;
+    const dist=Math.sqrt(x*x+z*z);
+    const satNorm=coneR>0.001?Math.min(1,dist/coneR):0;
+    const angle=Math.atan2(z,x);
+    const Cb=128+satNorm*112*Math.cos(angle);
+    const Cr=128+satNorm*112*Math.sin(angle);
+    const [r,g,b]=ycbcrToRgb(Y,Cb,Cr);
+    cols.push(r,g,b);
+}}
+geo.setAttribute('color',new THREE.Float32BufferAttribute(cols,3));
+group.add(new THREE.Mesh(geo,new THREE.MeshBasicMaterial({{vertexColors:true,side:THREE.DoubleSide}})));
+
+// Top disc (Y=235, full chroma)
+const dGeo=new THREE.CircleGeometry(1,128);
+const dCols=[], dp=dGeo.attributes.position;
+for(let i=0;i<dp.count;i++) {{
+    const x=dp.getX(i),z=dp.getZ(i);
+    const dist=Math.min(1,Math.sqrt(x*x+z*z));
+    const angle=Math.atan2(z,x);
+    const Cb=128+dist*112*Math.cos(angle);
+    const Cr=128+dist*112*Math.sin(angle);
+    const [r,g,b]=ycbcrToRgb(235,Cb,Cr);
+    dCols.push(r,g,b);
+}}
+dGeo.setAttribute('color',new THREE.Float32BufferAttribute(dCols,3));
+const disc=new THREE.Mesh(dGeo,new THREE.MeshBasicMaterial({{vertexColors:true,side:THREE.DoubleSide}}));
+disc.position.y=1; disc.rotation.x=-Math.PI/2;
+group.add(disc);
+
+{PickingScript}
+{ControlsScript}
+</script></body></html>";
+
+        // ════════════════════════════════════════════════════════════════
+        // 6. LAB SPHERE  (matches image 2)
+        //    L = vertical (black bottom → white top)
+        //    a* = left/right (green ← → red)
+        //    b* = front/back (blue ← → yellow)
+        // ════════════════════════════════════════════════════════════════
+        private static string BuildLabSphereHtml() => $@"
+<!DOCTYPE html><html><body style='margin:0;overflow:hidden'>
+<canvas id='c'></canvas>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'></script>
+<script>
+{MakeRenderer()}
+const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 100);
+camera.position.set(0.5, 2.5, 4); camera.lookAt(0,0,0);
+
+function labToRgb(L,a,b) {{
+    const fy=(L+16)/116, fx=a/500+fy, fz=fy-b/200;
+    const f=t=>t>0.206893?t*t*t:(t-16/116)/7.787;
+    const X=f(fx)*0.95047, Y=f(fy)*1.0, Z=f(fz)*1.08883;
+    let r= X*3.2404542-Y*1.5371385-Z*0.4985314;
+    let g=-X*0.9692660+Y*1.8760108+Z*0.0415560;
+    let bv= X*0.0556434-Y*0.2040259+Z*1.0572252;
+    const gc=v=>v>0.0031308?1.055*Math.pow(Math.max(0,v),1/2.4)-0.055:12.92*v;
+    return [Math.max(0,Math.min(1,gc(r))),
+            Math.max(0,Math.min(1,gc(g))),
+            Math.max(0,Math.min(1,gc(bv)))];
+}}
+
+const R=1.5;
+const geo=new THREE.SphereGeometry(R,64,64);
+const cols=[], pos=geo.attributes.position;
+for(let i=0;i<pos.count;i++) {{
+    const x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i);
+    const L=Math.max(0,Math.min(100,(y/R+1)*50));
+    const a=(x/R)*128;
+    const bv=(z/R)*128;
+    const [r,g,b]=labToRgb(L,a,bv);
+    cols.push(r,g,b);
+}}
+geo.setAttribute('color',new THREE.Float32BufferAttribute(cols,3));
+group.add(new THREE.Mesh(geo,new THREE.MeshBasicMaterial({{vertexColors:true,side:THREE.FrontSide}})));
+
+// Equator reference ring
+const ring=new THREE.TorusGeometry(R,0.015,8,128);
+group.add(new THREE.Mesh(ring,new THREE.MeshBasicMaterial({{color:0xffffff,opacity:0.4,transparent:true}})));
+
+{PickingScript}
+{ControlsScript}
 </script></body></html>";
     }
 }
