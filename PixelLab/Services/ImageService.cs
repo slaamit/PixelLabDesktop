@@ -3,9 +3,12 @@ using System.Windows.Media.Imaging;
 
 namespace PixelLab_Desktop.Services
 {
+    /// <summary>
+    /// DEV_NOTES : this class is just to reduce the noise code and let our code base be as pristine as it comes . 
+    ///             and in here we'll add the functions that we only need to call and no need to go into it's details . 
+    /// </summary>
     public class ImageService
     {
-        // Load a BitmapImage from a file path
         public BitmapImage LoadImage(string filePath)
         {
             var bitmap = new BitmapImage();
@@ -16,7 +19,6 @@ namespace PixelLab_Desktop.Services
             return bitmap;
         }
 
-        // Save a BitmapSource to a file path (as PNG)
         public void SaveImage(BitmapSource bitmap, string filePath)
         {
             var encoder = new PngBitmapEncoder();

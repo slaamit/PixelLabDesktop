@@ -8,7 +8,11 @@ using System.Windows.Media.Imaging;
 
 namespace PixelLab_Desktop.Helpers
 {
-    /// <summary>دوال تحويل الألوان باستخدام WriteableBitmap.</summary>
+    /// DEV_NOTES : this class would have the functions needed to change the color spaces like from RGB -> CMYK and stuff like that . 
+    ///             the functions in this class will be called via more than one class so it's important to keep everything public ( and static for performance ) . 
+    ///             and it will return writableBitmap so we can treat it as an image in the project . 
+    /// 
+    /// NOTES_FOR_TEAM : the way to change the color systems are in the lectures you can use them , or use other methods as you please . 
     public static class ColorSpaceConverter
     {
         public static WriteableBitmap ToCmyk(WriteableBitmap src)

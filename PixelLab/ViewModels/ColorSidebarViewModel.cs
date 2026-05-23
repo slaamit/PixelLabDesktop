@@ -6,12 +6,13 @@ using System.Windows.Media;
 namespace PixelLab_Desktop.ViewModels
 {
     /// <summary>
-    /// Holds the currently picked color and exposes its representation
-    /// in all 6 color systems for display in the sidebar bottom panel.
+    /// this class is for the side bar in the project , when we choose a color from the 3D view we'll need to show the color and show it's values in all of the other color systems . 
+    /// this class is a bit nested so please pay some attention for it . 
     /// </summary>
     public class ColorSidebarViewModel : INotifyPropertyChanged
     {
-        // ── Picked color swatch ──────────────────────────────────────────
+        // the color picked from the 3D space will be saved in this place . 
+        // with a setter and getter to change it's values as needed ( so we don't get to change alot of things at the same time ) . 
         private Color _pickedColor = Colors.White;
         public Color PickedColor
         {
@@ -27,7 +28,8 @@ namespace PixelLab_Desktop.ViewModels
 
         public SolidColorBrush PickedBrush => new SolidColorBrush(_pickedColor);
 
-        // ── Cross-system display strings ─────────────────────────────────
+        // this place will hold the text that is the values for all of the color systems . 
+        // and will change on propertychanged function called to change the color to match the new one . 
         private string _rgbText  = "—";
         private string _hsvText  = "—";
         private string _cmykText = "—";
@@ -42,7 +44,7 @@ namespace PixelLab_Desktop.ViewModels
         public string YCbCrText{ get => _ycbcrText;private set { _ycbcrText= value; OnPropertyChanged(); } }
         public string LabText  { get => _labText;  private set { _labText  = value; OnPropertyChanged(); } }
 
-        // ── Which color space tab is active (drives the 3D scene switcher) ──
+        // the active space is the place to choose what tab should be showing in 3D spaces , with a default value for RGB . 
         private string _activeSpace = "RGB";
         public string ActiveSpace
         {
@@ -50,32 +52,8 @@ namespace PixelLab_Desktop.ViewModels
             set { _activeSpace = value; OnPropertyChanged(); }
         }
 
-        // ── Sliders for the 2D planes ────────────────────────────────────
-        private double _yuvY = 0.5;
-        public double YuvY
-        {
-            get => _yuvY;
-            set { _yuvY = value; OnPropertyChanged(); OnPropertyChanged(nameof(YuvYPercent)); }
-        }
-        public string YuvYPercent => $"Y = {(int)(_yuvY * 100)}%";
-
-        private double _ycbcrY = 0.5;
-        public double YCbCrY
-        {
-            get => _ycbcrY;
-            set { _ycbcrY = value; OnPropertyChanged(); OnPropertyChanged(nameof(YCbCrYPercent)); }
-        }
-        public string YCbCrYPercent => $"Y = {(int)(_ycbcrY * 100)}%";
-
-        private double _labL = 0.5;
-        public double LabL
-        {
-            get => _labL;
-            set { _labL = value; OnPropertyChanged(); OnPropertyChanged(nameof(LabLPercent)); }
-        }
-        public string LabLPercent => $"L = {(int)(_labL * 100)}";
-
-        // ── Recompute all representations from the picked RGB color ──────
+        // DEV_NOTES :  in this function , we need to refresh the text and colors everytime a new color is picked , so we'll call this function . 
+        //              but because we're reading from a pixel in a 3D view and that is on a screen , so we'll get an RGB value that would then be changed into the other color systems.
         private void RefreshAllSystems()
         {
             byte r = _pickedColor.R, g = _pickedColor.G, b = _pickedColor.B;

@@ -15,6 +15,10 @@ using PixelLab_Desktop.ViewModels;
 
 namespace PixelLab_Desktop.Views
 {
+    /// <summary>
+    /// this class would init the WPF view , but we have it connected via ICommands so we don't have to deal with the values here . 
+    /// and the ICommands are called via WPF and in the XAML file .
+    /// </summary>
     public partial class ColorControlsWindow : Window
     {
         public ColorControlsWindow(MainViewModel vm)

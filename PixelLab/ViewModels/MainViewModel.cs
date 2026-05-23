@@ -9,9 +9,13 @@ using PixelLab_Desktop.Helpers;
 
 namespace PixelLab_Desktop.ViewModels
 {
+    /// <summary>
+    ///  this class is the main panel , the functions in this class are referenced in the xaml file and work as a logic bridge between them . 
+    /// </summary>
     public class MainViewModel : INotifyPropertyChanged
     {
-        // الصورة الأصلية
+        // saving the original image in a writable bitmap because we want to edit on it . and for the currentImage it's what we show at the screen after each edit 
+        // NOTE : the original image would not change so we can go back to the edits as we please . 
         private WriteableBitmap? _originalWb;
         private BitmapImage? _currentImage;
         public BitmapImage? CurrentImage
@@ -20,7 +24,9 @@ namespace PixelLab_Desktop.ViewModels
             set { _currentImage = value; OnPropertyChanged(); }
         }
 
-        // معلومات الصورة (المتطلب الثامن)
+        /// <summary>
+        /// TALAB 8 : to show the image info , and it's done by creating a string that we then add what we need to show on it . 
+        /// </summary>
         private string _imageInfo = "No image loaded.";
         public string ImageInfo
         {
@@ -28,13 +34,14 @@ namespace PixelLab_Desktop.ViewModels
             set { _imageInfo = value; OnPropertyChanged(); }
         }
 
-        // تخزين البيانات الأساسية للصورة
         private string _originalFileName = "";
         private string _originalFileSize = "";
         private string _originalImageFormat = "";
         private int _originalWidth, _originalHeight;
 
-        // أوامر المتطلب الثاني
+        /// <summary>
+        /// TALAB 2 : the commands for it .
+        /// </summary>
         public ICommand LoadImageCommand { get; }
         public ICommand SaveImageCommand { get; }
         public ICommand ConvertToCmykCommand { get; }
@@ -44,7 +51,7 @@ namespace PixelLab_Desktop.ViewModels
         public ICommand ConvertToLabCommand { get; }
         public ICommand ResetToOriginalCommand { get; }
 
-        // --- Talab 7: (Color Channels count Control) ---
+        // Talab 7: (Color Channels count Control) 
         private int _colorLevels = 256;
         public int ColorLevels
         {
@@ -54,7 +61,10 @@ namespace PixelLab_Desktop.ViewModels
 
         public ICommand ApplyPosterizeCommand { get; }
 
-        // --- قنوات RGB (المتطلب الثالث) ---
+        /// <summary>
+        /// TALAB 3 : the color channels 
+        /// </summary>
+        // RGB channels 
         private bool _redEnabled = true, _greenEnabled = true, _blueEnabled = true;
         public bool RedEnabled { get => _redEnabled; set { _redEnabled = value; ApplyRgbAdjustments(); OnPropertyChanged(); } }
         public bool GreenEnabled { get => _greenEnabled; set { _greenEnabled = value; ApplyRgbAdjustments(); OnPropertyChanged(); } }
@@ -65,7 +75,7 @@ namespace PixelLab_Desktop.ViewModels
         public byte GreenValue { get => _greenValue; set { _greenValue = value; ApplyRgbAdjustments(); OnPropertyChanged(); } }
         public byte BlueValue { get => _blueValue; set { _blueValue = value; ApplyRgbAdjustments(); OnPropertyChanged(); } }
 
-        // --- قنوات CMYK ---
+        // CMYK channels 
         private bool _cyanEnabled = true, _magentaEnabled = true, _yellowEnabled = true, _blackEnabled = true;
         public bool CyanEnabled { get => _cyanEnabled; set { _cyanEnabled = value; ApplyCmykAdjustments(); OnPropertyChanged(); } }
         public bool MagentaEnabled { get => _magentaEnabled; set { _magentaEnabled = value; ApplyCmykAdjustments(); OnPropertyChanged(); } }
@@ -78,7 +88,7 @@ namespace PixelLab_Desktop.ViewModels
         public byte YellowValue { get => _yellowValue; set { _yellowValue = value; ApplyCmykAdjustments(); OnPropertyChanged(); } }
         public byte BlackValue { get => _blackValue; set { _blackValue = value; ApplyCmykAdjustments(); OnPropertyChanged(); } }
 
-        // --- قنوات HSV ---
+        // HSV Channels 
         private bool _hueEnabled = true, _saturationEnabled = true, _valueEnabled = true;
         public bool HueEnabled { get => _hueEnabled; set { _hueEnabled = value; ApplyHsvAdjustments(); OnPropertyChanged(); } }
         public bool SaturationEnabled { get => _saturationEnabled; set { _saturationEnabled = value; ApplyHsvAdjustments(); OnPropertyChanged(); } }
@@ -89,7 +99,7 @@ namespace PixelLab_Desktop.ViewModels
         public byte SaturationValue { get => _saturationValue; set { _saturationValue = value; ApplyHsvAdjustments(); OnPropertyChanged(); } }
         public byte ValueValue { get => _valueValue; set { _valueValue = value; ApplyHsvAdjustments(); OnPropertyChanged(); } }
 
-        // --- قنوات YUV ---
+        // YUV Changgles 
         private bool _yEnabled = true, _uEnabled = true, _vEnabled = true;
         public bool YEnabled { get => _yEnabled; set { _yEnabled = value; ApplyYuvAdjustments(); OnPropertyChanged(); } }
         public bool UEnabled { get => _uEnabled; set { _uEnabled = value; ApplyYuvAdjustments(); OnPropertyChanged(); } }
@@ -100,7 +110,7 @@ namespace PixelLab_Desktop.ViewModels
         public byte UValue { get => _uValue; set { _uValue = value; ApplyYuvAdjustments(); OnPropertyChanged(); } }
         public byte VValue { get => _vValue; set { _vValue = value; ApplyYuvAdjustments(); OnPropertyChanged(); } }
 
-        // --- قنوات YCbCr ---
+        // YCbCr Channels 
         private bool _ycbcrYEnabled = true, _cbEnabled = true, _crEnabled = true;
         public bool YCbCrYEnabled { get => _ycbcrYEnabled; set { _ycbcrYEnabled = value; ApplyYCbCrAdjustments(); OnPropertyChanged(); } }
         public bool CbEnabled { get => _cbEnabled; set { _cbEnabled = value; ApplyYCbCrAdjustments(); OnPropertyChanged(); } }
@@ -111,7 +121,7 @@ namespace PixelLab_Desktop.ViewModels
         public byte CbValue { get => _cbValue; set { _cbValue = value; ApplyYCbCrAdjustments(); OnPropertyChanged(); } }
         public byte CrValue { get => _crValue; set { _crValue = value; ApplyYCbCrAdjustments(); OnPropertyChanged(); } }
 
-        // --- قنوات LAB ---
+        // LAB Channels 
         private bool _lEnabled = true, _aEnabled = true, _bEnabled = true;
         public bool LEnabled { get => _lEnabled; set { _lEnabled = value; ApplyLabAdjustments(); OnPropertyChanged(); } }
         public bool AEnabled { get => _aEnabled; set { _aEnabled = value; ApplyLabAdjustments(); OnPropertyChanged(); } }
@@ -122,7 +132,7 @@ namespace PixelLab_Desktop.ViewModels
         public byte AValue { get => _aValue; set { _aValue = value; ApplyLabAdjustments(); OnPropertyChanged(); } }
         public byte BValue { get => _bValue; set { _bValue = value; ApplyLabAdjustments(); OnPropertyChanged(); } }
 
-        // المُنشئ
+        // public constructor . 
         public MainViewModel()
         {
             LoadImageCommand = new RelayCommand(ExecuteLoadImage);
@@ -136,17 +146,23 @@ namespace PixelLab_Desktop.ViewModels
             ApplyPosterizeCommand = new RelayCommand(ApplyPosterization);
         }
 
-        // دالة عامة للسحب والإفلات
+        /// <summary>
+        /// TALAB 1 : to open the image from drag and drop and from a dialog image .
+        /// </summary>
+
         public void LoadImageFromPath(string path) => LoadImage(path);
 
-        // فتح مربع حوار واختيار صورة
         private void ExecuteLoadImage()
         {
             var dlg = new OpenFileDialog { Filter = "Image Files|*.jpg;*.jpeg;*.png;*.bmp" };
             if (dlg.ShowDialog() == true) LoadImage(dlg.FileName);
         }
 
-        // تحميل الصورة وحفظ معلوماتها (المتطلب الثامن)
+        /// <summary>
+        /// TALAB 8 + 1 : this function is part of the code ,and it needed to be added after the constructor because it caused some errors when it was before it . 
+        /// NOTE : this function is to load the image info when we load the image itself that's why it's part of the TALABs 1 and 8 togather .
+        /// </summary>
+        /// <param name="path"></param>
         private void LoadImage(string path)
         {
             try
@@ -186,22 +202,26 @@ namespace PixelLab_Desktop.ViewModels
             catch (Exception ex) { ImageInfo = $"Error: {ex.Message}"; }
         }
 
-        // حفظ الصورة
+        /// <summary>
+        /// TALAB 10 : saving the image to disk  
+        /// </summary>
         private void ExecuteSaveImage()
         {
-            if (_originalWb == null) return;
+            if (CurrentImage == null) return;
             var dlg = new SaveFileDialog { Filter = "PNG Image|*.png", FileName = "output.png" };
             if (dlg.ShowDialog() == true)
             {
                 using var stream = new FileStream(dlg.FileName, FileMode.Create);
                 var encoder = new PngBitmapEncoder();
-                encoder.Frames.Add(BitmapFrame.Create(_originalWb));
+                encoder.Frames.Add(BitmapFrame.Create(CurrentImage));
                 encoder.Save(stream);
                 ImageInfo = $"Saved to {dlg.FileName}";
             }
         }
 
-        // --- دوال التحويل (المتطلب الثاني) مع إبقاء المعلومات ---
+        /// <summary>
+        /// TALAB 2 : converting the original image to other color systems while preserving the original one . 
+        /// </summary>
         private void ExecuteConvertToCmyk()
         {
             if (_originalWb == null) return;
@@ -283,7 +303,11 @@ namespace PixelLab_Desktop.ViewModels
 
 
 
-        // --- دوال التعديل الفوري (المتطلب الثالث) ---
+        /// <summary>
+        /// TALAB 3 : to change the color values for each image by the color system.  
+        /// DEV_NOTES : each function would change the values from the original image to the color system and the original would be resetted . 
+        ///             and the default color system is RBG and when we reset we would return to it . 
+        /// </summary>
         private void ApplyRgbAdjustments()
         {
             if (_originalWb == null) return;
@@ -499,7 +523,13 @@ namespace PixelLab_Desktop.ViewModels
             UpdateDisplay(w, h, stride, pixels);
         }
 
-        // تحديث الصورة المعروضة بعد تعديل القنوات
+        /// <summary>
+        /// after any change on the image we'd call this fucntion to update the current display  . 
+        /// </summary>
+        /// <param name="w"></param>
+        /// <param name="h"></param>
+        /// <param name="stride"></param>
+        /// <param name="pixels"></param>
         private void UpdateDisplay(int w, int h, int stride, byte[] pixels)
         {
             WriteableBitmap result = new WriteableBitmap(w, h, _originalWb.DpiX, _originalWb.DpiY, _originalWb.Format, null);
@@ -507,7 +537,12 @@ namespace PixelLab_Desktop.ViewModels
             CurrentImage = ConvertWriteableToBitmapImage(result);
         }
 
-        // تحويل WriteableBitmap إلى BitmapImage (للعرض في WPF)
+        /// <summary>
+        /// DEV_NOTES : in WPF , sometimes it may not reload the bitmap image from source . so re-creating the bitmap image everytime is the best option to ensure that 
+        ///             updates does take effect in place . 
+        /// </summary>
+        /// <param name="wb"></param>
+        /// <returns></returns>
         private BitmapImage ConvertWriteableToBitmapImage(WriteableBitmap wb)
         {
             using var ms = new MemoryStream();
@@ -524,7 +559,7 @@ namespace PixelLab_Desktop.ViewModels
             return result;
         }
 
-        // تنفيذ INotifyPropertyChanged
+        // propertychanged event calling 
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string? name = null) =>
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));

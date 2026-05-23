@@ -7,6 +7,14 @@ using PixelLab_Desktop.ViewModels;
 
 namespace PixelLab_Desktop.Views
 {
+    /// <summary>
+    /// TALAB 4 + 5 : this class has the needed values for showing the color spaces and deal interact with them as we please . 
+    /// DEV_NOTES : this class is self sustained , meaning it doesn't effect anything in the image itself , so unlike the other views where the XAML.CS is almost empty 
+    ///             the logic is all in this class itself . 
+    ///             
+    /// DEV_NOTES2: the way this class work is by building the 3D in a web view that would run HTML,CSS,JS and we used it to build a simple webpage that would run the 3D world 
+    ///             and used Three.js to build the 3D system , because handling the 3D movement in Three.js is fairly simple and can be done just by adding controls and nothing more. 
+    /// </summary>
     public partial class ColorSpaceSidebar : UserControl
     {
         private bool _isInitialized = false;
@@ -19,7 +27,7 @@ namespace PixelLab_Desktop.Views
             InitWebView();
         }
 
-        // ── WebView2 init ────────────────────────────────────────────────
+        // web view init 
         private async void InitWebView()
         {
             try
@@ -34,12 +42,13 @@ namespace PixelLab_Desktop.Views
             catch { /* WebView2 runtime not installed */ }
         }
 
-        // ── Space selector buttons ───────────────────────────────────────
+        // DEV_NOTES : just connected the viewing of the color type from the XAML file to a button click to make life easier for me ( and because I didn't know any other way to be honest ) .
         private void SpaceBtn_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button btn && btn.Tag is string space)
                 ShowSpace(space);
         }
+
 
         private void ShowSpace(string space)
         {
@@ -47,7 +56,12 @@ namespace PixelLab_Desktop.Views
             WebView3D.NavigateToString(BuildHtml(space));
         }
 
-        // ── Receive picked color from Three.js ───────────────────────────
+        /// <summary>
+        /// get the picked color from Three.js web application . 
+        /// DEV_NOTES : this function will take the pixel showing in the webview so when we click on the background we'll get the color of the background . 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void OnWebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
         {
             var parts = e.TryGetWebMessageAsString().Split(',');
@@ -73,7 +87,7 @@ namespace PixelLab_Desktop.Views
         }
 
         // ════════════════════════════════════════════════════════════════
-        // HTML router
+        // HTML router for all the types 
         // ════════════════════════════════════════════════════════════════
         private static string BuildHtml(string space) => space switch
         {
@@ -90,8 +104,7 @@ namespace PixelLab_Desktop.Views
         // Shared JS snippets
         // ════════════════════════════════════════════════════════════════
 
-        // Pixel-color picking — reads the rendered pixel from the WebGL
-        // canvas, so it is always correct after any rotation or zoom.
+        // DEV_NOTES : this script will take the pixle from the world view itself and then send its RGB value to our functions 
         private static string PickingScript => @"
 renderer.domElement.addEventListener('click', function(e) {
     renderer.render(scene, camera);
@@ -106,7 +119,7 @@ renderer.domElement.addEventListener('click', function(e) {
 });
 ";
 
-        // Full-axis mouse rotate (X and Y) + scroll zoom
+        // controle bindings for zooming , rotating 
         private static string ControlsScript => @"
 let _drag = false, _lx = 0, _ly = 0;
 document.addEventListener('mousedown', e => { if(e.button===0){_drag=true;_lx=e.clientX;_ly=e.clientY;} });
@@ -125,6 +138,7 @@ function animate() { requestAnimationFrame(animate); renderer.render(scene, came
 animate();
 ";
 
+        // building the renderer that would render everything in the render of THREE.js
         private static string MakeRenderer(string bg = "0x1a1a1a") => $@"
 const renderer = new THREE.WebGLRenderer({{
     canvas: document.getElementById('c'),
@@ -321,7 +335,7 @@ group.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({{vertexColors:true,si
 </script></body></html>";
 
         // ════════════════════════════════════════════════════════════════
-        // 5. YCbCr CONE  (matches image 1 — same shape as HSV cone)
+        // 5. YCbCr CONE  (same shape as HSV cone)
         // ════════════════════════════════════════════════════════════════
         private static string BuildYCbCrConeHtml() => $@"
 <!DOCTYPE html><html><body style='margin:0;overflow:hidden'>
@@ -382,7 +396,7 @@ group.add(disc);
 </script></body></html>";
 
         // ════════════════════════════════════════════════════════════════
-        // 6. LAB SPHERE  (matches image 2)
+        // 6. LAB SPHERE  
         //    L = vertical (black bottom → white top)
         //    a* = left/right (green ← → red)
         //    b* = front/back (blue ← → yellow)

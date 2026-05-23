@@ -7,7 +7,7 @@ using System.Windows.Input;
 
 namespace PixelLab_Desktop.ViewModels
 {
-    /// <summary>ينفذ ICommand لربط الأزرار.</summary>
+    /// DEV_NOTES : we need this to connect the buttens with th ICommands from the other files . 
     internal class RelayCommand : ICommand
     {
         private readonly Action _execute;
